@@ -1,94 +1,185 @@
 #!bin/bash
-
-# GwangWoon University. 2019203032. Jeong Hoon Lee
+# Author : 2019203032 Jeong Hoon Lee
 
 # Declare of colors
-declare BlackText='[30;47m'  # Text-black Background-gray
-declare Background='[47m'    # 	    Background-gray
-declare Title='[30;46m'      # Text-black Backgounrd-blue
-declare BlueText='[34;47m'   # Text-blue  Background-gray
-declare GreenText='[32;47m'  # Text-green Background-gray
-declare ClearColor='[0m'     # set default 
-declare CursorColor='[0;43m' # Text-white Background-Yellow
+declare BlackText='[30;47m'   # Text-black  Background-gray
+declare Background='[47m'     # 			Background-gray
+declare Title='[30;46m'       # Text-black  Backgounrd-blue
+declare BlueText='[34;47m'    # Text-blue   Background-gray
+declare GreenText='[32;47m'   # Text-green  Background-gray
+declare ClearColor='[0m'      # set default 
+declare CursorColor='[0;43m'  # Text-white  Background-Yellow
+declare GCursorColor='[0;42m' # Text-white  Background-Green
+declare RedText='[31;47m'	   # Text-Red	Background-gray
 
+unset temp; unset temp2; unset temp5;
 # Declare for cursor
-declare -i cursor=0            # moving cursor 1~20
-declare -i count=0	       # count for limit 20
-
-# Dec;are for information
-declare -a dirName # insert directory name sorted by name
-declare -a exeName # insert executable file name  sorted by name
-declare -a otrName # insert else file name sorted by name
-
-# declare -i TreeX
-# declare -i TreeY
-# declare -a Bridge=('|' '├' '└')
-
-
-# Draw Tree 
-:<<END
-function DrawTree() { #$1 Must directory  #$2 Xpos  #$3 Ypos
-	TreeX=$2; TreeY=$3;
-	
-	TreeX=TreeX+1; 
-	TreeY=TreeY+1;
-	
-	tput cup $TreeX $TreeY
-	echo "${BlueText}${PWD##*/}${ClearColor}"
-
-	for files in $1/*;
-	do
-		if [ -x "$files" ]; then
-			TreeX=TreeX+1;
-			echo "${BlackText}${Bridge[1]}${ClearColor}"
-			TreeY=TreeY+1;
-			echo "${BlackText}${files}${ClearColor}"
-		fi
-	done
-}
-
-	TreeX=$2; TreeY=$3;
-	declare -i NumberOfbar=0
-	tput cup $TreeX $TreeY
-	
-	echo "${BlueText}${PWD##*/}${ClearColor}"
-	TreeX=TreeX+1 
-	
-	for ((i=0; i<"${#dirName[@]}"; i++))
-	do
-		if [ -d ${dirName[i]} ] && [ "${dirName[i]}" = "." ] && [ "${dirName[i]}" = ".." ]; then
-			tput cup $TreeX $TreeY
-			echo "${BlackText}${Bridge[1]}${ClearColor}"
-	
-			DrawTree ${dirNam[i]} $TreeX $TreeY
-		fi
-	done
-
-END
+declare -i cursor            # cursor should be 1~20
+declare -i LRcursor			 # for moving cursor LR 1: Left -1: Right
+declare -i startNum			 # for print 20 (L)
+declare -i startNum2		 # for print 20 (R)
+# Declare for information
+declare -a dirName 			# insert directory name sorted by name
+declare -a cName 			# insert executable file name  sorted by name
+declare -a hName 			# insert else file name sorted by name
+declare -a EveryFileName	# insert left field information
+declare -a EveryMakeFile	# insert right field information
+declare mainMake			# .c file what have int main()
+declare -a cMake			# .c files (mainMake doesn't here)
+declare -a hMake			# .h files
+declare -i temp				# index of left field
+declare -i temp5			# index of right field
 
 # Main function
 function Main() {
+	unset mainMake; unset EveryMakeFile; 
+	unset cMake; unset hMake;
+	cd ~
+	declare -i Maxofstart=0;
+	declare -i Maxofstart2=0;
+	cursor=1; startNum=0; startNum2=0; LRcursor=1;
+
 	while [ true ] # infinite loop
 	do
 		DrawUI  
-		declare -i max=count-1 
-		read -n 3 key
-			if [ "$key" = [A ] && [ $cursor -ne 0 ]; then        # up
-				cursor=cursor-1
-			elif [ "$key" = [B ] && [ $cursor -lt $max ]; then   # down
-				cursor=cursor+1    
-	#		elif [ "$key" = [C ]; then 			       # right
-	#			break;
-	#		elif [ "$key" = [D ]; then                           # left
-	#			break;
-			elif [ -z ${key} ]; then                               # enter
-				if [ -d ${PWD}/${dirName[$cursor]} ]; then     
-					cd ${PWD}/${dirName[$cursor]}          # move to /target
-					cursor=0
+		Maxofstart=${#EveryFileName[@]}-20;
+		Maxofstart2=${#EveryMakeFile[@]}-20;
+		temp=$cursor+$startNum-1
+		temp5=$cursor+$startNum2-1
+		temp2=`grep -r 'int main()' ./${EveryFileName[$temp]}`
+		
+		if [ $LRcursor -eq -1 ]; then
+			read -n 3 -d "d" key
+		else
+			read -n 3 key
+		fi
+			if [ "$key" = [A ]; then	# up
+				if [ $cursor -gt 1 ]; then
+					cursor=cursor-1
+				elif [ $cursor -eq 1 ] ; then	
+					if [ $startNum -eq 0 ] && [ $LRcursor -eq 1 ]; then 
+						if [ ${#EveryFileName[@]} -lt 20 ]; then
+							cursor=${#EveryFileName[@]} 
+						else
+							cursor=20
+							startNum=Maxofstart
+						fi
+					elif [ $startNum -ne 0 ] && [ $LRcursor -eq 1 ]; then	
+						startNum=startNum-1
+					elif [ $startNum2 -eq 0 ] && [ $LRcursor -eq -1 ]; then
+						if [ ${#EveryMakeFile[@]} -lt 20 ]; then
+							if [ ${#EveryMakeFile[@]} -gt 0 ]; then
+								cursor=${#EveryMakeFile[@]} 
+							else
+								cursor=1
+							fi
+						else
+							cursor=20
+							startNum2=Maxofstart2
+						fi
+					elif [ $startNum2 -ne 0 ] && [ $LRcursor -eq -1 ]; then	
+						startNum2=startNum2-1
+					fi
 				fi
+			
+			elif [ "$key" = [B ]; then   # down
+				if [ $LRcursor -eq 1 ]; then
+					if [ $cursor -lt 20 ] && [ $cursor -lt ${#EveryFileName[@]} ]; then	# if cursor != 20 and cursor > number of file
+						cursor=cursor+1
+					elif [ $cursor -eq 20 ] && [ $startNum -lt $Maxofstart ] && [ $Maxofstart -gt 0 ]; then	# if cursor == 20
+						startNum=startNum+1
+					elif [ $cursor -eq 20 ] || [ $cursor -eq ${#EveryFileName[@]} ]; then
+						cursor=1
+						if [ $startNum -eq $Maxofstart ]; then
+							startNum=0
+						fi
+					fi
+				elif [ $LRcursor -eq -1 ]; then
+					if [ $cursor -lt 20 ] && [ $cursor -lt ${#EveryMakeFile[@]} ]; then	# if cursor != 20 and cursor > number of file
+						cursor=cursor+1
+					elif [ $cursor -eq 20 ] && [ $startNum2 -lt $Maxofstart2 ] && [ $Maxofstart2 -gt 0 ]; then	# if cursor == 20
+						startNum2=startNum2+1
+					elif [ $cursor -eq 20 ] || [ $cursor -eq ${#EveryMakeFile[@]} ]; then
+					cursor=1
+						if [ $startNum2 -eq $Maxofstart2 ]; then
+						startNum2=0
+						fi
+					fi
+				fi
+
+			elif [ "$key" = [C ] || [ "$key" = [D ]; then	# right or left
+				if [ ${#EveryMakeFile[@]} - gt 0]; then
+					LRcursor=-LRcursor
+				fi
+				if [ $cursor -gt ${#EveryMakeFile[@]} ] && [ ${#EveryMakeFile[@]} -gt 0 ]; then
+					cursor=${#EveryMakeFile[@]}
+				fi
+
+			elif [ -z ${key} ] && [ $LRcursor -eq 1 ]; then	# enter
+				if [ -d ${PWD}/${EveryFileName[$temp]} ]; then     
+					cd ${PWD}/${EveryFileName[$temp]}	# move to /target
+					cursor=1
+					startNum=0
+					#unset EveryMakeFile ; unset cMake; unset hMake; unset mainMake;
+				elif [ -f ./${EveryFileName[$temp]} ] && [[ $temp2 =~ "int main()" ]]; then
+					mainMake=${EveryFileName[$temp]}
+				elif [ -f ./${EveryFileName[$temp]} ] && [[ ${EveryFileName[$temp]} =~ ".c" ]]; then	# if c files
+					temp4=`isIn cMake[@] ${EveryFileName[$temp]}`
+					if [ $temp4 -eq -1 ]; then
+						cMake+=(${EveryFileName[$temp]})
+					fi
+				elif [ -f ./${EveryFileName[$temp]} ] && [[ ${EveryFileName[$temp]} =~ ".h" ]]; then	# if h files
+					temp4=`isIn hMake[@] ${EveryFileName[$temp]}`
+					if [ $temp4 -eq -1 ]; then
+						hMake+=(${EveryFileName[$temp]})
+					fi
+				fi
+			elif [ -z ${key} ] && [ $LRcursor -eq -1 ]; then # if press "d" at Right
+				temp2=`grep -r 'int main()' ./${EveryMakeFile[$temp5]}`
+				if [[ $temp2 =~ "int main()" ]]; then
+					unset mainMake
+				elif [[ ${EveryMakeFile[$temp5]} =~ ".c" ]]; then
+					for i in ${!cMake[@]}
+					do
+						if [ ${cMake[i]} = ${EveryMakeFile[$temp5]} ]; then
+							unset cMake[i]:
+							break;
+						fi
+					done
+					for i in ${!cMake[@]}
+					do
+						temp_arr+=( "${cMake[i]}" )
+					done
+					cMake=("${temp_arr[@]}")
+					unset temp_arr
+
+				elif [[ ${EveryMakeFile[$temp5]} =~ ".h" ]]; then
+					for i in ${!hMake[@]}
+					do
+						if [ ${hMake[i]} = ${EveryMakeFile[$temp5]} ]; then
+							unset hMake[i]:
+							break;
+						fi
+					done
+					for i in ${!hMake[@]}
+					do
+						temp_arr+=( "${hMake[i]}" )
+					done
+					hMake=("${temp_arr[@]}")
+					unset temp_arr
+				fi
+				if [ ${#EveryMakeFile[@]} -gt 1 -a ${#EveryMakeFile[@]} -le 20 ]; then
+					cursor=cursor-1
+				elif [ ${startNum2} -ne 0 ]; then
+					startNum2=startNum2-1
+				fi
+			elif [ "${key[0]}" = "m" ] && [ $LRcursor -eq 1 ] && [ -n "${mainMake}" ]; then # "m" + Enter
+				MakeMakefile 
+				clear
+				break;
 			else 
 				continue:
-			fi 
+			fi
 	done
 }
 
@@ -100,6 +191,42 @@ function Blank() { # make Blank function   $1 is number of blanks
 	done
 }
 
+function MakeMakefile() { # make makefile
+	new_arr+=("${mainMake:0:-2}.o")
+	for (( i=0; i<${#cMake[@]}; i++ ))
+	do
+		new_arr+=("${cMake[i]:0:-2}.o")
+		echo "${new_arr[i]}"
+	done
+
+	rm makefile
+	touch makefile
+	#temp_arr+=("${mainMake:0:-2}.o")
+	#temp_arr+=("${new_arr[@]}")
+	echo "OBJF = "${new_arr[@]}"" >> ./makefile
+	unset temp_arr
+
+	echo "2019203032.out : \$(OBJF)" >> ./makefile
+	echo -e "\tgcc $^ -o \$@"  >> ./makefile
+	for (( i=0; i<${#new_arr[@]}; i++ ))
+	do
+		for (( j=0; j<${#hMake[@]}; j++ ))
+		do
+			temp2=`grep -r "#include \"${hMake[j]}\"" ./${new_arr[i]:0:-2}.c`
+			if [[ $temp2 =~ ${hMake[j]} ]]; then
+				temp_arr+=("${hMake[j]}")
+			fi
+		done
+		echo "${new_arr[i]} : ${new_arr[i]:0:-2}.c ${temp_arr[@]}" >> ./makefile
+		echo -e "\tgcc -c $<" >> ./makefile
+		unset temp_arr
+	done
+
+	echo "clean :" >> ./makefile
+	echo -e "\trm -f *.o" >> ./makefile
+
+	unset new_arr
+}
 
 function DrawUI() {  # draw UI
 	clear
@@ -114,12 +241,13 @@ function DrawUI() {  # draw UI
 		echo "${Background}$(Blank 83)${ClearColor}"   # Make every tiles gray using blank
 	done
 
-
-
 	for i in 1 3 24 26
 	do
 		tput cup $i 0
-		echo "${BlackText}-----------------------------------------------------------------------------------"
+		for (( j=0; j<83; j++ ))
+		do
+			echo -n "${BlackText}-"
+		done
 	done
 
 	for ((i=2; i<26;i++))   # left right line
@@ -145,229 +273,152 @@ function DrawUI() {  # draw UI
 	echo "${BlackText}Current path: `pwd`${ClearColor}"
 
 	# coloring cursor 
-	declare -i expcur=cursor+4
-	tput cup $expcur 1
-	echo "${CursorColor}$(Blank 40)${ClearColor}"
+	declare -i expcur=cursor+3
 
-
+	if [ $LRcursor -gt 0 ]; then  # LEFT
+		tput cup $expcur 1
+		echo "${CursorColor}$(Blank 40)${ClearColor}"
+	else							# RIGHT
+		tput cup $expcur 42
+		echo "${GCursorColor}$(Blank 40)${ClearColor}"
+	fi
 
 	Explorer
-	#DrawTree ${PWD} 3 41
+	Source
 	Under
 	tput cup 27 0
 }
 
-function Under() {  # print Number of Fils, Directories and size of current Directory size
-	NumberOfDir=`ls -al ${PWD} | grep "^d" | wc -l`
-	NumberOfDir=`expr $NumberOfDir - 2`
-	NumberOfFiles=`ls -al ${PWD} | grep "^-" | wc -l`
-	CurrentDirSize=`du -sh | awk '{print $1}'`
-	tput cup 25 6
-	echo "${BlackText}Directory : ${NumberOfDir}${ClearColor}"
-	tput cup 25 26
-	echo "${BlackText}File : ${NumberOfFiles}${ClearColor}" 
-	tput cup 25 44 
-	echo "${BlackText}Current Directory Size : ${CurrentDirSize}${ClearColor}"
+function isIn() {	 #$1 is array $2 is target
+	declare -i temp3=-1
+	for i in ${!1}
+	do
+		if [ $i = $2 ]; then
+			temp3=1
+			break;
+		fi
+	done
+	echo "$temp3"
 }
 
-function Explorer() {  # print File Explorer
+function Under() {  # print Number of .c .h
+	NumberOfc=`ls -al ${PWD} | grep "^-.*\.c" | wc -l`
+	NumberOfh=`ls -al ${PWD} | grep "^-.*\.h" | wc -l`
+	tput cup 25 6
+	echo "${BlackText}C Files : ${NumberOfc}${ClearColor}"
+	tput cup 25 26
+	echo "${BlackText}Header : ${NumberOfh}${ClearColor}"
+}
+
+function Explorer() {  # print File Explorer (Left Field)
 	unset EveryFileName; unset EveryFilePerm; unset EveryFileSize
 	unset dirName; unset dirPerm; unset dirSize;
-	unset exeName; unset exePerm; unset exeSize;
-	unset otrName; unset otrSize; unset otrSize;
+	unset cName; unset cPerm; unset cSize;
+	unset hName; unset hSize; unset hSize;
 	
- 	declare -a EveryFileName=(`ls -ahl ${PWD} | sort -k 9 | awk '{print $9}'`) #insert every file name of this dir. sorted by name
-	declare -a EveryFilePerm=(`ls -ahl ${PWD} | sort -k 9 | awk '{print $1}'`) #insert every file permission of this dir. sorted by name
-	declare -a EveryFIleSize=(`ls -ahl ${PWD} | sort -k 9 | awk '{print $5}'`) 
-
-	declare -a dirPerm # insert dirName's permission
-	declare -a dirSize # insert dirName's size
+	declare -a EveryFilePerm
+	declare -a EveryFileSize
+	 
+	dirName+=(`ls -ahl ${PWD} | sort -k 9 | grep "^d" | awk '{print $9}'`)
+	declare -a dirPerm=(`ls -ahl ${PWD} | sort -k 9 | grep "^d" | awk '{print $1}'`) # insert dirName's permission
+	declare -a dirSize=(`ls -ahl ${PWD} | sort -k 9 | grep "^d" | awk '{print $5}'`) # insert dirName's size
 		
-	declare -a exePerm # insert exeName's permission		
-	declare -a exeSize # insert exeName's size
+	cName=(`ls -ahl ${PWD} | sort -k 9 | grep "^-.*\.c" | awk '{print $9}'`)
+	declare -a cPerm=(`ls -ahl ${PWD} | sort -k 9 | grep "^-.*\.c" | awk '{print $1}'`) # insert cName's permission		
+	declare -a cSize=(`ls -ahl ${PWD} | sort -k 9 | grep "^-.*\.c" | awk '{print $5}'`) # insert cName's size
 
-	declare -a otrPerm # insert otrName's permission
-	declare -a otrSize # insert otrNmae's size
+	hName=(`ls -ahl ${PWD} | sort -k 9 | grep "^-.*\.h" | awk '{print $9}'`)
+	declare -a hPerm=(`ls -ahl ${PWD} | sort -k 9 | grep "^-.*\.h" | awk '{print $1}'`) # insert hName's permission
+	declare -a hSize=(`ls -ahl ${PWD} | sort -k 9 | grep "^-.*\.h" | awk '{print $5}'`) # insert hNmae's size
 	
-	# get information using "ls -ahl"
-	for ((i=0; i<${#EveryFileName[@]}; i++))
+	for (( i=0; i<${#dirName[@]}; i++ ))
 	do
-		if [ -d "${PWD}/${EveryFileName[i]}" ]; then  # if EveryFileName[i] means directory
-			dirName+=(${EveryFileName[i]})
-			dirPerm+=(${EveryFilePerm[i+1]})    # according to "sum" need to + 1
-			dirSize+=(${EveryFIleSize[i]}) 	
-		
-		elif [ -x "${PWD}/${EveryFileName[i]}" ]; then # if EveryFileName[i] means executable file
-			exeName+=(${EveryFileName[i]})
-			exePerm+=(`ls -ahl ${PWD}/${EveryFileName[i]} | awk '{print $1}'`)
-			exeSize+=(`ls -ahl ${PWD}/${EveryFileName[i]} | awk '{print $5}'`) 	
-		
-		else
-			otrName+=(${EveryFileName[i]}) # else
-			otrPerm+=(`ls -ahl ${PWD}/${EveryFileName[i]} | awk '{print $1}'`)
-			otrSize+=(`ls -ahl ${PWD}/${EveryFileName[i]} | awk '{print $5}'`) 	
-		fi			
+		EveryFileName+=(${dirName[i]}); EveryFilePerm+=(${dirPerm[i]}); EveryFileSize+=(${dirSize[i]});
 	done
-	
-	
+
+	for (( i=0; i<${#cName[@]}; i++ ))
+	do
+		EveryFileName+=(${cName[i]}); EveryFilePerm+=(${cPerm[i]}); EveryFileSize+=(${cSize[i]});
+	done
+
+	for (( i=0; i<${#hName[@]}; i++ ))
+	do
+		EveryFileName+=(${hName[i]}); EveryFilePerm+=(${hPerm[i]}); EveryFileSize+=(${hSize[i]});
+	done
+
 	# Start write
-	tput cup 4 1
-	count=0  # For max info (20)
-	declare -i StartExplorerX=4  # xPos
+	tput cup 4 1 
+	declare -i xPos=4  # xPos
+	declare -i cur=cursor+3
 
-	#left File Name start
-	for ((i=0; i<${#dirName[@]}; i++))
+	for (( i=${startNum}; i<${startNum}+20; i++ ))
 	do
-		if [ $count -eq 20 ]; then
-			break;	
-		fi
-		tput cup $StartExplorerX 1
-		if [ $count -eq $cursor ]; then
-			echo "${CursorColor}${dirName[i]}${ClearColor}"
+		if [ $cur -eq $xPos ] && [ $LRcursor -gt 0 ]; then
+			tput cup $xPos 1
+			echo "${CursorColor}${EveryFileName[i]}"
+			tput cup $xPos 18
+			echo "${EveryFilePerm[i]}"
+			tput cup $xPos 35
+			echo "${EveryFileSize[i]}${ClearColor}"
 		else
-			echo "${BlueText}${dirName[i]}${ClearColor}"
+			if [ -d "${PWD}/${EveryFileName[i]}" ]; then	# if directory
+				tput cup $xPos 1
+				echo "${BlueText}${EveryFileName[i]}"
+				tput cup $xPos 18
+				echo "${EveryFilePerm[i]}"
+				tput cup $xPos 35
+				echo "${EveryFileSize[i]}${ClearColor}"
+			elif [[ "${EveryFileName[i]}" =~ ".c" ]]; then	# if .c files
+				tput cup $xPos 1
+				echo "${GreenText}${EveryFileName[i]}"
+				tput cup $xPos 18
+				echo "${EveryFilePerm[i]}"
+				tput cup $xPos 35
+				echo "${EveryFileSize[i]}${ClearColor}" 
+			else	# if .h files
+				tput cup $xPos 1
+				echo "${BlackText}${EveryFileName[i]}"
+				tput cup $xPos 18
+				echo "${EveryFilePerm[i]}"
+				tput cup $xPos 35
+				echo "${EveryFileSize[i]}${ClearColor}"
+			fi
 		fi
-		StartExplorerX=StartExplorerX+1
-		count=count+1
+		xPos=xPos+1
 	done
 	
-	
-	for ((i=0; i<${#exeName[@]}; i++))
-	do
-		if [ $count -eq 20 ]; then
-			break;	
-		fi
-		tput cup $StartExplorerX 1
-		if [ $count -eq $cursor ]; then
-			echo "${CursorColor}${exeName[i]}${ClearColor}"
-		else
-			echo "${GreenText}${exeName[i]}${ClearColor}"
-		fi
-		StartExplorerX=StartExplorerX+1
-		count=count+1
-	done
+}
 
-	for ((i=0; i<${#otrName[@]}; i++))
-	do
-		if [ $count -eq 20 ]; then
-			break;
-		fi
-		tput cup $StartExplorerX 1
-		if [ $count -eq $cursor ]; then
-			echo "${CursorColor}${otrName[i]}${ClearColor}"
-		else
-			echo "${BlackText}${otrName[i]}${ClearColor}"
-		fi
-		StartExplorerX=StartExplorerX+1
-		count=count+1
-	done
-	#left File Name finish
+function Source() { # print What to make (Right Field)
+	unset EveryMakeFile; #unset cMake; unset hMake; sunset mainMake;
 
-	count=0; StartExplorerX=4;   # clear var
+	declare -i xPos2=4  # xPos
+	declare -i cur2=cursor+3
 
-	#center File Permission start
-	for ((i=0; i<${#dirPerm[@]}; i++))
-	do
-		if [ $count -eq 20 ]; then
-			break;	
-		fi
-		tput cup $StartExplorerX 18
-		if [ $count -eq $cursor ]; then
-			echo "${CursorColor}${dirPerm[i]}${ClearColor}"
-		else
-			echo "${BlueText}${dirPerm[i]}${ClearColor}"
-		fi
-		StartExplorerX=StartExplorerX+1
-		count=count+1
-	done
-	
-	
-	for ((i=0; i<${#exePerm[@]}; i++))
-	do
-		if [ $count -eq 20 ]; then
-			break;	
-		fi
-		tput cup $StartExplorerX 18
-		if [ $count -eq $cursor ]; then
-			echo "${CursorColor}${exePerm[i]}${ClearColor}"
-		else
-			echo "${GreenText}${exePerm[i]}${ClearColor}"
-		fi
-		StartExplorerX=StartExplorerX+1
-		count=count+1
-	done
+	EveryMakeFile+=($mainMake)
+	EveryMakeFile+=(${cMake[@]})
+	EveryMakeFile+=(${hMake[@]})
 
-	for ((i=0; i<${#otrPerm[@]}; i++))
+	for (( i=${startNum2}; i<${startNum2}+20; i++ ))
 	do
-		if [ $count -eq 20 ]; then
-			break;
-		fi
-		tput cup $StartExplorerX 18
-		if [ $count -eq $cursor ]; then
-			echo "${CursorColor}${otrPerm[i]}${ClearColor}"
+		if [ $cur2 -eq $xPos2 ] && [ $LRcursor -lt 0 ]; then
+			tput cup $xPos2 42
+			echo "${GCursorColor}${EveryMakeFile[i]}"
 		else
-			echo "${BlackText}${otrPerm[i]}${ClearColor}"
-		fi
-		StartExplorerX=StartExplorerX+1
-		count=count+1
-	done
-	# center File Permission finish
+			if [ "${EveryMakeFile[i]}" = "${mainMake}" ]; then
+				tput cup $xPos2 42
+				echo "${RedText}${EveryMakeFile[i]}"
 
-	count=0; StartExplorerX=4;  # clear var
-
-	# right File Size start
-	for ((i=0; i<${#dirSize[@]}; i++))
-	do
-		if [ $count -eq 20 ]; then
-			break;	
+			elif [[ "${EveryMakeFile[i]}" =~ ".c" ]]; then	# if .c files
+				tput cup $xPos2 42
+				echo "${GreenText}${EveryMakeFile[i]}"
+			else											# if .h files
+				tput cup $xPos2 42
+				echo "${BlackText}${EveryMakeFile[i]}"
+			fi
 		fi
-		
-		if [ "${dirName[i]}" = "." ] || [ "${dirName[i]}" = ".." ]; then 
-		dirSize[i]="-"; 		
-		fi
-		
-		tput cup $StartExplorerX 35
-		if [ $count -eq $cursor ]; then
-			echo "${CursorColor}${dirSize[i]}${ClearColor}"
-		else
-			echo "${BlueText}${dirSize[i]}${ClearColor}"
-		fi
-		StartExplorerX=StartExplorerX+1
-		count=count+1
+		xPos2=xPos2+1
 	done
-	
-	
-	for ((i=0; i<${#exeSize[@]}; i++))
-	do
-		if [ $count -eq 20 ]; then
-			break;	
-		fi
-		tput cup $StartExplorerX 35
-		if [ $count -eq $cursor ]; then
-			echo "${CursorColor}${exeSize[i]}${ClearColor}"
-		else
-			echo "${GreenText}${exeSize[i]}${CleaerColor}"
-		fi
-		StartExplorerX=StartExplorerX+1
-		count=count+1
-	done
-
-	for ((i=0; i<${#otrSize[@]}; i++))
-	do
-		if [ $count -eq 20 ]; then
-			break;
-		fi
-		tput cup $StartExplorerX 35
-		if [ $count -eq $cursor ]; then
-			echo "${CursorColor}${exeSize[i]}${ClearColor}"
-		else
-			echo "${BlackText}${otrSize[i]}${ClearColor}"
-		fi
-		StartExplorerX=StartExplorerX+1
-		count=count+1
-	done
-	#right File Size finish
-
 }
 
 Main
