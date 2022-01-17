@@ -1,6 +1,5 @@
 # Bash_File_Explorer
-리눅스 환경에서 처음 만들어본 프로젝트
-vim 사용이 처음이라 너무 어려웠다.
+vim 에디터 사용이 처음이라 너무 어려웠다.
 
 #FileExplorer.sh
 -----
