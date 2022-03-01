@@ -1,5 +1,6 @@
 # Bash_File_Explorer
-vim 에디터 사용이 처음이라 너무 어려웠다.
+
+File Explorer make by Bash Shell script
 
 #FileExplorer.sh
 -----
