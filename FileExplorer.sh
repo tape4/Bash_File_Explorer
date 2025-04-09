@@ -1,6 +1,6 @@
-#!bin/bash
+#!/bin/bash
 
-# KwangWoon University. 2019203032. Jeong Hoon Lee
+# Kwangwoon University. 2019203032. Jeong Hoon Lee
 
 # Declare of colors
 declare BlackText='[30;47m'  # Text-black Background-gray
