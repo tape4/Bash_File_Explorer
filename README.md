@@ -32,3 +32,8 @@ This project simulates a lightweight file manager inside the shell, featuring re
 ```bash
 chmod +x FileExplorer.sh
 ./FileExplorer.sh
+```
+
+
+
+<img width="710" alt="Screenshot 2025-04-10 at 12 08 44 AM" src="https://github.com/user-attachments/assets/49c09d63-4423-488e-ae41-e32902d384ef" />
